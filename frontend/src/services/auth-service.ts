@@ -30,6 +30,12 @@ const signUp = async (user: IUser) => {
 
 }
 
+const signOut = async () => {
+    const {error} = await supabase.auth.signOut();
+
+    if(error) throw error;
+}
+
 const getUser = async () => {
     const {data, error} = await supabase.auth.getSession();
 
@@ -38,8 +44,58 @@ const getUser = async () => {
     return data.session?.user;
 }
 
+const configure = async () => {
+    const {data, error} = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        issuer: 'SEG-2024',
+        friendlyName: 'SEG-2024'
+    })
+
+    if(error) throw error;
+
+    return data;
+}
+
+const getFactorId = async () => {
+    const {data, error} = await supabase.auth.mfa.listFactors();
+
+    if(error) throw error;
+
+    return { factorID: data.totp.length > 0 ? data.totp[0].id : '' }
+}
+
+const verifyCode = async (factorID: string, code: string) => {
+    const {data, error} = await supabase.auth.mfa.challengeAndVerify({
+        code: code,
+        factorId: factorID
+    });
+
+    if(error) throw error;
+
+    return data;
+}
+
+const remove = async (factorId: string) => {
+    const {data, error} = await supabase.auth.mfa.unenroll({
+        factorId: factorId
+    });
+
+    if(error) throw error;
+
+    return data;
+}
+
+const mfa = {
+    configure,
+    getFactorId,
+    verifyCode,
+    remove
+}
+
 export const AuthService = {
     signIn,
     signUp,
-    getUser
+    signOut,
+    getUser,
+    mfa
 }

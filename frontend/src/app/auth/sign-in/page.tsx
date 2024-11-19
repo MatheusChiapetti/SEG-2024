@@ -6,14 +6,16 @@ import { Traco } from "../../components/ui/traco";
 import { ICredential } from "../../../@libs/types";
 import { AuthService } from "../../../services/auth-service";
 import { useAuth } from "../../../hooks/useAuth";
+import { toast } from "react-toastify";
+
 
 function SignInPage() {
   const navigate = useNavigate();
 
+  const { setUser, setFactorId } = useAuth();
+
   //State - Loading
   const [loading, setLoading] = useState(false)
-
-  const { setUser } = useAuth();
 
   const [credential, setCredential] = useState<ICredential>({
     username: '',
@@ -27,16 +29,27 @@ function SignInPage() {
 
     AuthService.signIn(credential)
       .then(result => {
-        navigate('/');
 
-        setUser({
-          uid: result.user.id,
-          email: result.user.email || '',
-          name: result.user.user_metadata?.name
-        });
+        const currentUser = {
+            uid: result.user.id,
+            email: result.user.email || '',
+            name: result.user.user_metadata?.name
+        };
+
+        AuthService.mfa.getFactorId()
+        .then(result => {
+          if(result.factorID) {
+            setFactorId(result.factorID);
+            navigate('/auth/two-factor', { replace: true })
+          } else {
+            setUser(currentUser);
+            navigate('/auth/two-factor', { replace: true })
+          }
+        })
+        
       })
-      .catch(error => {
-        console.log('PAU ', error)
+      .catch(() => {
+        toast.error('Credencial inválida');
       })
       .finally(() => {
         setLoading(false)
@@ -50,12 +63,12 @@ function SignInPage() {
         alignItems="center"
         gap={1}
       >
-        <Typography
+        <Typography 
           variant="h5"
         >
           Faça o Login
         </Typography>
-        <Typography
+        <Typography 
           variant="subtitle1"
           sx={{
             marginBottom: '2rem'
@@ -64,14 +77,14 @@ function SignInPage() {
           Já tem uma conta?
         </Typography>
 
-        <TextField
+        <TextField 
           label="Usuário"
           required
           fullWidth
           value={credential.username}
           onChange={event => setCredential({ ...credential, username: (event.target as HTMLInputElement).value })} />
 
-        <TextField
+        <TextField 
           label="Senha"
           required
           fullWidth
@@ -79,7 +92,7 @@ function SignInPage() {
           value={credential.password}
           onChange={event => setCredential({ ...credential, password: (event.target as HTMLInputElement).value })} />
 
-        <LoadingButton
+        <LoadingButton 
           type="submit"
           variant="contained"
           size="large"
@@ -100,7 +113,7 @@ function SignInPage() {
           }}
         >
           <Traco />
-          <Typography
+          <Typography 
             component="h5"
             sx={{
               margin: '0 8px'
@@ -111,12 +124,12 @@ function SignInPage() {
           <Traco />
         </Stack>
 
-        <Typography
+        <Typography 
           variant="h5"
         >
           Crie uma Conta
         </Typography>
-        <Typography
+        <Typography 
           variant="subtitle1"
         >
           Ainda não tem uma conta?
